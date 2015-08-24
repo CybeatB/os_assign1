@@ -10,7 +10,7 @@ public class Process {
 
   // Methods
   public int compareTo(Process proc) {
-    // this <(-1) =(0) >(+1)
+    // this <(-1) =(0) >(+1) (lower value -> higher priority)
     if (!this._action.equals(proc.action())) {
       return this._action.equals("C") ? -1 : 1;
     }
@@ -18,7 +18,7 @@ public class Process {
       return this._time - proc.time();
     }
     if (!this._type.equals(proc.type())) {
-      // F > B > E
+      return this.typeComp(this._type, proc.type());
     }
     if (this._seats != proc.seats()) {
       return this._seats - proc.seats();
@@ -47,5 +47,30 @@ public class Process {
   private String _type;
   private int _seats;
   private String _id;
+
+  // Helpers
+  /* Returns:
+   * <0 when a > b
+   * =0 when a = b
+   * >0 when a < b */
+  private int typeComp(String a, String b) {
+    if (a.equals(b)) {
+      return 0;
+    }
+    if (a.equals('F')) {
+      return -1;
+    }
+    if (b.equals('F')) {
+      return 1;
+    }
+    if (a.equals('B')) {
+      return -1;
+    }
+    if (b.equals('B')) {
+      return 1;
+    }
+    // Should Never Happen
+    return 0;
+  }
 }
 
