@@ -11,7 +11,7 @@ public class Process {
   // Methods
   public int compareTo(Process proc) {
     // this <(-1) =(0) >(+1) (lower value -> higher priority)
-    if (!this._action.equals(proc.action())) {
+    if (!this._action.equals(proc.action()) && !this._id.equals(proc.id())) {
       return this._action.equals("C") ? -1 : 1;
     }
     if (this._time != proc.time()) {
