@@ -3,7 +3,7 @@ import java.io.*;
 
 public class SchedulerDriver{
 
-	public static class Process {
+	private static class Process implements Comparable<Process> {
 	  // Constructor
 	  public Process(int time, String act, String type, int seats, String id) {
 	    this._time = time;
