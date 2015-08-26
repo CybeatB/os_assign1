@@ -148,9 +148,11 @@ public class SchedulerDriver {
 //        cancel.stream().forEach((p) -> {
 //            System.out.println(p.type() + " " + p.agentID() + " " + p.seats() + " " + p.action());
 //        });
-
         //Output text
-        while (res.size() > 0 && cancel.size() > 0) {
+        while (res.size() >= 0 && cancel.size() >= 0) {
+            if (res.isEmpty() && cancel.isEmpty()) {
+                break;
+            }
 
             int prev_time = -1;
 
@@ -190,8 +192,8 @@ public class SchedulerDriver {
                     //process the batch
                     for (Process p : batch) {
                         System.out.println("Agent " + p.agentID() + "Booked " + p.seats() + "seats.");
-                        map.put(agent, p.time());
-                        System.out.println("Putting agent " + agent + " at " + p.time());
+                        map.put(p.agentID(), p.time());
+//                        System.out.println("Putting agent " + agent + " at " + p.time());
                     }
                     batch.clear();
                 } else {
@@ -223,14 +225,26 @@ public class SchedulerDriver {
                     }
                     batch.clear();
                 }
-                
+
             } else {
                 //Reservation
                 //Check for batch
+ 
+                System.out.println();
+                System.out.println("Current Reservation Queue");
+                System.out.println("-------------------------------------------------------");
+                res.stream().forEach((p) -> {
+                    System.out.println(p.type() + " " + p.agentID() + " " + p.seats() + " " + p.action());
+                });
+                System.out.println("-------------------------------------------------------");
+
                 while (true) {
+
                     Process top = res.poll();
+//                    System.out.println("Top = " + top.agentID());
                     if (top != null) {
                         batch.add(top);
+
                         if (res.peek() != null) {
                             if (top.seats() != res.peek().seats()) {
                                 break;
@@ -239,9 +253,8 @@ public class SchedulerDriver {
                             } else if (!top.action().equals(res.peek().action())) {
                                 break;
                             }
-                        } else {
-                            break;
                         }
+
                     } else {
                         break;
                     }
@@ -250,9 +263,9 @@ public class SchedulerDriver {
                 //process the batch
                 int count = 0;
                 for (Process p : batch) {
-                    System.out.println("Agent " + p.agentID() + "Booked " + p.seats() + "seats. In loop " + count);
-                    System.out.println("Putting agent " + agent + " at " + p.time());
-                    map.put(agent, p.time());
+                    System.out.println("                        " + p.agentID() + " Booked " + p.seats() + "seats. In loop " + count);
+//                    System.out.println("Putting agent " + agent + " at " + p.time());
+                    map.put(p.agentID(), p.time());
                     count++;
                 }
                 batch.clear();
