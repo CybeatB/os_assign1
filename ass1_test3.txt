@@ -1,0 +1,8 @@
+Agent1 R F 4 0
+Agent2 R F 4 0
+Agent3 R F 4 0
+Agent4 R E 1 0
+Agent5 R B 2 1
+Agent6 R B 4 1
+Agent1 C F 3 9
+Agent4 C E 1 15
