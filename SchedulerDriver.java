@@ -1,13 +1,6 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-package schedulerdriver;
-
 /**
  *
- * @author Josh
+ * @author Josh, Jonathan
  */
 import java.util.*;
 import java.io.*;
@@ -27,20 +20,27 @@ public class SchedulerDriver {
 
         // Methods
         public int compareTo(Process proc) {
+            System.out.println("this: " + this.toString());
+            System.out.println("proc: " + proc.toString());
+            System.out.println(" --- ");
             // this <(-1) =(0) >(+1) (lower value -> higher priority)
-            if (!this._action.equals(proc.action()) && !this._id.equals(proc.agentID())) {
+            if ((!this._action.equals(proc.action())) && (!this._id.equals(proc.agentID()))) {
                 return this._action.equals("C") ? -1 : 1;
             }
-            if (this._time != proc.time()) {
+            if (Integer.compare(this._time, proc.time()) != 0) {
                 return this._time - proc.time();
             }
             if (!this._type.equals(proc.type())) {
-                return this.typeComp(this._type, proc.type());
+                return this.typeCompAlt(this._type, proc.type());
+                //return this.typeComp(this._type, proc.type());
             }
-            if (this._seats != proc.seats()) {
-                return this._seats + proc.seats();
+            if (Integer.compare(this._seats, proc.seats()) != 0) {
+                return proc.seats() - this._seats;
             }
             return this._id.compareTo(proc.agentID());
+        }
+        public String toString() {
+          return this._id + " " + this._action + " " + this._type + " " + this._seats + " " + this._time;
         }
 
         public int time() {
@@ -71,11 +71,30 @@ public class SchedulerDriver {
         private String _id;
 
         // Helpers
-	  /* Returns:
+    	  /* Returns:
          * <0 when a > b
          * =0 when a = b
          * >0 when a < b */
+        private int typeCompAlt(String a, String b) {
+          String cmp = a + b;
+          switch (cmp) {
+            case "FB":
+              return -1;
+            case "FE":
+              return -1;
+            case "BF":
+              return 1;
+            case "EF":
+              return 1;
+            case "BE":
+              return -1;
+            case "EB":
+              return 1;
+          }
+          return 0;
+        }
         private int typeComp(String a, String b) {
+            System.out.println("Comparing " + a + " to " + b);
             if (a.equals(b)) {
                 return 0;
             }
@@ -165,6 +184,13 @@ public class SchedulerDriver {
 
             if (map.get(agent) != null) {
                 prev_time = map.get(agent);
+                System.out.println();
+                System.out.println("Current Reservation Queue");
+                System.out.println("-------------------------------------------------------");
+                res.stream().forEach((p) -> {
+                    System.out.println(p.toString());
+                });
+                System.out.println("-------------------------------------------------------");
 
                 if (res.peek().time() == prev_time) {
                     //Reservation
@@ -191,7 +217,7 @@ public class SchedulerDriver {
 
                     //process the batch
                     for (Process p : batch) {
-                        System.out.println("Agent " + p.agentID() + "Booked " + p.seats() + "seats.");
+                        System.out.println("BLOCK 1: Agent " + p.agentID() + "Booked " + p.seats() + "seats.");
                         map.put(p.agentID(), p.time());
 //                        System.out.println("Putting agent " + agent + " at " + p.time());
                     }
@@ -234,7 +260,7 @@ public class SchedulerDriver {
                 System.out.println("Current Reservation Queue");
                 System.out.println("-------------------------------------------------------");
                 res.stream().forEach((p) -> {
-                    System.out.println(p.type() + " " + p.agentID() + " " + p.seats() + " " + p.action());
+                    System.out.println(p.toString());
                 });
                 System.out.println("-------------------------------------------------------");
 
@@ -253,6 +279,8 @@ public class SchedulerDriver {
                             } else if (!top.action().equals(res.peek().action())) {
                                 break;
                             }
+                        } else {
+                          break;
                         }
 
                     } else {
