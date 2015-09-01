@@ -19,10 +19,11 @@ public class SchedulerDriver {
         }
 
         // Methods
+        @Override
         public int compareTo(Process proc) {
-            System.out.println("this: " + this.toString());
-            System.out.println("proc: " + proc.toString());
-            System.out.println(" --- ");
+//            System.out.println("this: " + this.toString());
+//            System.out.println("proc: " + proc.toString());
+//            System.out.println(" --- ");
             // this <(-1) =(0) >(+1) (lower value -> higher priority)
             if ((!this._action.equals(proc.action())) && (!this._id.equals(proc.agentID()))) {
                 return this._action.equals("C") ? -1 : 1;
@@ -39,8 +40,10 @@ public class SchedulerDriver {
             }
             return this._id.compareTo(proc.agentID());
         }
+
+        @Override
         public String toString() {
-          return this._id + " " + this._action + " " + this._type + " " + this._seats + " " + this._time;
+            return this._id + " " + this._action + " " + this._type + " " + this._seats + " " + this._time;
         }
 
         public int time() {
@@ -64,11 +67,11 @@ public class SchedulerDriver {
         }
 
         // Variables
-        private int _time;
-        private String _action;
-        private String _type;
-        private int _seats;
-        private String _id;
+        private final int _time;
+        private final String _action;
+        private final String _type;
+        private final int _seats;
+        private final String _id;
 
         // Helpers
     	  /* Returns:
@@ -76,38 +79,39 @@ public class SchedulerDriver {
          * =0 when a = b
          * >0 when a < b */
         private int typeCompAlt(String a, String b) {
-          String cmp = a + b;
-          switch (cmp) {
-            case "FB":
-              return -1;
-            case "FE":
-              return -1;
-            case "BF":
-              return 1;
-            case "EF":
-              return 1;
-            case "BE":
-              return -1;
-            case "EB":
-              return 1;
-          }
-          return 0;
+            String cmp = a + b;
+            switch (cmp) {
+                case "FB":
+                    return -1;
+                case "FE":
+                    return -1;
+                case "BF":
+                    return 1;
+                case "EF":
+                    return 1;
+                case "BE":
+                    return -1;
+                case "EB":
+                    return 1;
+            }
+            return 0;
         }
+
         private int typeComp(String a, String b) {
-            System.out.println("Comparing " + a + " to " + b);
+//            System.out.println("Comparing " + a + " to " + b);
             if (a.equals(b)) {
                 return 0;
             }
-            if (a.equals('F')) {
+            if (a.equals("F")) {
                 return -1;
             }
-            if (b.equals('F')) {
+            if (b.equals("F")) {
                 return 1;
             }
-            if (a.equals('B')) {
+            if (a.equals("B")) {
                 return -1;
             }
-            if (b.equals('B')) {
+            if (b.equals("B")) {
                 return 1;
             }
             // Should Never Happen
@@ -115,10 +119,79 @@ public class SchedulerDriver {
         }
     }
 
+    private static void printBatch(ArrayList<Process> batch) {
+
+        String temp = "";
+//       System.out.println("Admit a batch (" + temp + ")" );
+        int tempCount = batch.size();
+        int count = batch.size();
+        int semaphore = 1;
+
+        
+        
+        //ADMIT A BATCH
+        for (Process p : batch) {
+            temp = temp + p.agentID();
+            if (tempCount > 1) {
+                temp = temp + ", ";
+            }
+            tempCount--;
+        }
+        System.out.println("Admit a batch (" + temp + ")");
+
+        //AGENT * WAITS
+        for (Process p : batch) {
+            semaphore--;
+            System.out.println(p.agentID() + " executes wait operation, semaphore = " + semaphore);
+        }
+
+        //AGENT ACTIVITY
+        for (Process p : batch) {
+
+            if (p.action().equals("C")) {
+                System.out.println("CANCEL");
+                semaphore++;
+                System.out.println(p.agentID() + " executes signal operation, semaphore = " + semaphore);
+                System.out.println(p.agentID() + " exits the system");
+            } else {
+                System.out.println(p.agentID() + " enters the system");
+                String resSeat = (p.agentID() + " reserves " + p.seats());
+                if (p.seats() > 1) {
+                    resSeat = resSeat + " seats in";
+                } else {
+                    resSeat = resSeat + " seat in";
+                }
+
+                switch (p.type()) {
+                    case "F":
+                        resSeat = resSeat + " First-class";
+                        break;
+                    case "B":
+                        resSeat = resSeat + " Business-class";
+                        break;
+                    case "E":
+                        resSeat = resSeat + " Economy-class";
+                        break;
+                }
+                System.out.println(resSeat);
+
+                semaphore++;
+                System.out.println(p.agentID() + " executes signal operation, semaphore = " + semaphore);
+                System.out.println(p.agentID() + " exits the system");
+            }
+        }
+
+    }
+
     public static void main(String args[]) {
+
+//        public static int firstSeats = 10;
+//        public static int buisSeats = 20;
+//        public static int econSeats = 70;
 
         PriorityQueue<Process> cancel = new PriorityQueue<>();
         PriorityQueue<Process> res = new PriorityQueue<>();
+        PriorityQueue<Process> overFull = new PriorityQueue<>();
 
         HashMap<String, Integer> map = new HashMap<>();
 
@@ -169,6 +242,16 @@ public class SchedulerDriver {
 //        });
         //Output text
         while (res.size() >= 0 && cancel.size() >= 0) {
+
+//                System.out.println("Current Reservation Queue");
+//                System.out.println("-------------------------------------------------------");
+//                res.stream().forEach((p) -> {
+//                    System.out.println(p.toString());
+//                });
+//                cancel.stream().forEach((p) -> {
+//                    System.out.println(p.toString());
+//                });
+//                System.out.println("-------------------------------------------------------");
             if (res.isEmpty() && cancel.isEmpty()) {
                 break;
             }
@@ -184,14 +267,14 @@ public class SchedulerDriver {
 
             if (map.get(agent) != null) {
                 prev_time = map.get(agent);
-                System.out.println();
-                System.out.println("Current Reservation Queue");
-                System.out.println("-------------------------------------------------------");
-                res.stream().forEach((p) -> {
-                    System.out.println(p.toString());
-                });
-                System.out.println("-------------------------------------------------------");
 
+//                System.out.println();
+//                System.out.println("Current Reservation Queue");
+//                System.out.println("-------------------------------------------------------");
+//                res.stream().forEach((p) -> {
+//                    System.out.println(p.toString());
+//                });
+//                System.out.println("-------------------------------------------------------");
                 if (res.peek().time() == prev_time) {
                     //Reservation
                     //Check for batch
@@ -216,11 +299,15 @@ public class SchedulerDriver {
                     }
 
                     //process the batch
-                    for (Process p : batch) {
-                        System.out.println("BLOCK 1: Agent " + p.agentID() + "Booked " + p.seats() + "seats.");
+//                    for (Process p : batch) {
+//                        System.out.println("BLOCK 1: Agent " + p.agentID() + "Booked " + p.seats() + "seats.");
+//                        map.put(p.agentID(), p.time());
+////                        System.out.println("Putting agent " + agent + " at " + p.time());
+//                    }
+                    batch.stream().forEach((p) -> {
                         map.put(p.agentID(), p.time());
-//                        System.out.println("Putting agent " + agent + " at " + p.time());
-                    }
+                    });
+                    printBatch(batch);
                     batch.clear();
                 } else {
                     //Cancellation
@@ -246,28 +333,29 @@ public class SchedulerDriver {
                     }
 
                     //process the batch
-                    for (Process p : batch) {
-                        System.out.println("Agent " + p.agentID() + "Cancelled " + p.seats() + "seats.");
-                    }
+//                    for (Process p : batch) {
+//                        System.out.println("Agent " + p.agentID() + "Cancelled " + p.seats() + "seats.");
+//                    }
+                    printBatch(batch);
+
                     batch.clear();
                 }
 
             } else {
                 //Reservation
                 //Check for batch
- 
-                System.out.println();
-                System.out.println("Current Reservation Queue");
-                System.out.println("-------------------------------------------------------");
-                res.stream().forEach((p) -> {
-                    System.out.println(p.toString());
-                });
-                System.out.println("-------------------------------------------------------");
 
+//                System.out.println();
+//                System.out.println("Current Reservation Queue");
+//                System.out.println("-------------------------------------------------------");
+//                res.stream().forEach((p) -> {
+//                    System.out.println(p.toString());
+//                });
+//                System.out.println("-------------------------------------------------------");
                 while (true) {
 
                     Process top = res.poll();
-//                    System.out.println("Top = " + top.agentID());
+//                  System.out.println("Top = " + top.agentID());
                     if (top != null) {
                         batch.add(top);
 
@@ -280,7 +368,7 @@ public class SchedulerDriver {
                                 break;
                             }
                         } else {
-                          break;
+                            break;
                         }
 
                     } else {
@@ -289,13 +377,18 @@ public class SchedulerDriver {
                 }
 
                 //process the batch
-                int count = 0;
-                for (Process p : batch) {
-                    System.out.println("                        " + p.agentID() + " Booked " + p.seats() + "seats. In loop " + count);
+//                int count = 0;
+//                for (Process p : batch) {
+//                    System.out.println("                        " + p.agentID() + " Booked " + p.seats() + "seats. In loop " + count);
 //                    System.out.println("Putting agent " + agent + " at " + p.time());
+//                    map.put(p.agentID(), p.time());
+//                    count++;
+//                }
+                batch.stream().forEach((p) -> {
                     map.put(p.agentID(), p.time());
-                    count++;
-                }
+                });
+
+                printBatch(batch);
                 batch.clear();
             }
 
