@@ -1,18 +1,20 @@
+
 /**
  *
- * @author Josh, Jonathan
+ * @author Josh Schwarz (a1645899), Jonathan Blieschke (a1646288)
  */
 import java.util.*;
 import java.io.*;
 
 public class SchedulerDriver {
 
-    public static int firstSeats = 10;
-    public static int buisSeats = 20;
-    public static int econSeats = 70;
-    public static PriorityQueue<Process> overFull = new PriorityQueue<>();
-    public static int overFullSize = 0;
+    private static int firstSeats = 10;
+    private static int buisSeats = 20;
+    private static int econSeats = 70;
+    private final static PriorityQueue<Process> overFull = new PriorityQueue<>();
+    private static int overFullSize = -1;
 
+    //The Process class will sort each request in the given order
     private static class Process implements Comparable<Process> {
 
         // Constructor
@@ -27,9 +29,6 @@ public class SchedulerDriver {
         // Methods
         @Override
         public int compareTo(Process proc) {
-//            System.out.println("this: " + this.toString());
-//            System.out.println("proc: " + proc.toString());
-//            System.out.println(" --- ");
             // this <(-1) =(0) >(+1) (lower value -> higher priority)
             if ((!this._action.equals(proc.action())) && (!this._id.equals(proc.agentID()))) {
                 return this._action.equals("C") ? -1 : 1;
@@ -80,7 +79,7 @@ public class SchedulerDriver {
         private final String _id;
 
         // Helpers
-    	  /* Returns:
+    	 /* Returns:
          * <0 when a > b
          * =0 when a = b
          * >0 when a < b */
@@ -104,7 +103,6 @@ public class SchedulerDriver {
         }
 
         private int typeComp(String a, String b) {
-//            System.out.println("Comparing " + a + " to " + b);
             if (a.equals(b)) {
                 return 0;
             }
@@ -125,51 +123,61 @@ public class SchedulerDriver {
         }
     }
 
+    //Prints out the information in each batch in order, as per spec
     private static void printBatch(ArrayList<Process> batch) {
 
         String temp = "";
-        
         int tempCount = batch.size();
         int count = batch.size();
         int semaphore = 1;
 
-        for (Process p : batch){
-            switch (p.type()) {
-                case "F":
-                    if(firstSeats - p.seats() >= 0){
-                        firstSeats = firstSeats - p.seats();
-                    }
-                    else{
-                        overFull.add(p);
-                        overFullSize++;
-                        System.out.println("Cannot admit a batch");
-                        System.out.println(p.agentID() + "  cannot reserve any seats in this system");
-                    }   break;
-                case "B":
-                    if (buisSeats - p.seats() >= 0) {
-                        buisSeats = buisSeats - p.seats();
-                    } else {
-                        overFull.add(p);
-                        overFullSize++;
-                        System.out.println("Cannot admit a batch");
-                        System.out.println(p.agentID() + "  cannot reserve any seats in this system");
-                }   break;
-                case "E":
-                    if (econSeats - p.seats() >= 0) {
-                        econSeats = econSeats - p.seats();
-                    } else {
-                        overFull.add(p);
-                        overFullSize++;
-                        System.out.println("Cannot admit a batch");
-                        System.out.println(p.agentID() + "  cannot reserve any seats in this system");
-                }   break;
+        //Count seats +/- from total avaliable. Any that fall outside bounds will be added to the overflow queue.
+        for (Process p : batch) {
+            if (p.action().equals("R")) {
+                switch (p.type()) {
+                    case "F":
+                        if (firstSeats - p.seats() >= 0) {
+                            firstSeats = firstSeats - p.seats();
+                        } else {
+                            overFull.add(p);
+                        }
+                        break;
+                    case "B":
+                        if (buisSeats - p.seats() >= 0) {
+                            buisSeats = buisSeats - p.seats();
+                        } else {
+                            overFull.add(p);
+                        }
+                        break;
+                    case "E":
+                        if (econSeats - p.seats() >= 0) {
+                            econSeats = econSeats - p.seats();
+                        } else {
+                            overFull.add(p);
+                        }
+                        break;
+                }
+            } else {
+                switch (p.type()) {
+                    case "F":
+                        firstSeats = firstSeats + p.seats();
+                        break;
+                    case "B":
+                        buisSeats = buisSeats + p.seats();
+                        break;
+                    case "E":
+                        econSeats = econSeats + p.seats();
+                        break;
+                }
             }
         }
-        
-        for(Process p : overFull){
+
+        //Remove the un-processable requests from the origional batch
+        for (Process p : overFull) {
             batch.remove(p);
+            tempCount--;
         }
-        
+
         //ADMIT A BATCH
         for (Process p : batch) {
             temp = temp + p.agentID();
@@ -178,14 +186,12 @@ public class SchedulerDriver {
             }
             tempCount--;
         }
-        
+
         if (!batch.isEmpty()) {
             System.out.println("Admit a batch (" + temp + ")");
         }
-        
-        
 
-        //AGENT * WAITS
+        //AGENT * WAITS & SEMAPHORE
         for (Process p : batch) {
             semaphore--;
             System.out.println(p.agentID() + " executes wait operation, semaphore = " + semaphore);
@@ -194,7 +200,9 @@ public class SchedulerDriver {
         //AGENT ACTIVITY
         for (Process p : batch) {
 
+            //CANCELATION
             if (p.action().equals("C")) {
+                overFullSize = 0;
                 System.out.println(p.agentID() + " enters the system");
                 String resSeat = (p.agentID() + " cancels " + p.seats());
                 if (p.seats() > 1) {
@@ -215,11 +223,12 @@ public class SchedulerDriver {
                         break;
                 }
                 System.out.println(resSeat);
-                
+
                 semaphore++;
                 System.out.println(p.agentID() + " executes signal operation, semaphore = " + semaphore);
                 System.out.println(p.agentID() + " exits the system");
             } else {
+                //RESERVATION
                 System.out.println(p.agentID() + " enters the system");
                 String resSeat = (p.agentID() + " reserves " + p.seats());
                 if (p.seats() > 1) {
@@ -246,20 +255,17 @@ public class SchedulerDriver {
                 System.out.println(p.agentID() + " exits the system");
             }
         }
-
     }
 
     public static void main(String args[]) {
 
         PriorityQueue<Process> cancel = new PriorityQueue<>();
         PriorityQueue<Process> res = new PriorityQueue<>();
-
         HashMap<String, Integer> map = new HashMap<>();
-
         ArrayList<Process> batch = new ArrayList<>();
         FileInputStream fstream = null;
-
         File file = new File(args[0]);
+        String strLine;
 
         //Parse File
         try {
@@ -267,19 +273,16 @@ public class SchedulerDriver {
         } catch (IOException e) {
         }
         BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
-        
-        String strLine;
 
+        //Create objects and push on appropriate queue
         try {
-
             while ((strLine = br.readLine()) != null) {
+                //AGENT NEEDS SPACE BEFORE DIGIT
                 String[] splitString = strLine.split(" ");
-                
                 String tempNum = splitString[0];
                 int space = tempNum.length();
-                tempNum = tempNum.substring(0, space-1) + " " + tempNum.substring(space-1, tempNum.length());
-                
-                
+                tempNum = tempNum.substring(0, space - 1) + " " + tempNum.substring(space - 1, tempNum.length());
+
                 String agentNum = tempNum;
                 String act = splitString[1];
                 String type = splitString[2];
@@ -292,47 +295,19 @@ public class SchedulerDriver {
                     cancel.add(new Process(time, act, type, seats, agentNum));
                 }
             }
-
             br.close();
-
         } catch (IOException e) {
-
         }
 
+        //Process requests until we run out, or cant process any more
         while (res.size() >= 0 && cancel.size() >= 0) {
-            
-//            System.out.println("--------------------");
-//            System.out.println("First: " + firstSeats);
-//            System.out.println("Buis: " + buisSeats);
-//            System.out.println("Econ: " + econSeats);
-//            System.out.println("--------------------");
-//            System.out.println("Overflow: " + overFullSize);
-            
-            if (res.isEmpty() && cancel.isEmpty()) {
-                if (overFull.isEmpty()) {
-                    break;
-                } else {
-                    if (overFullSize == overFull.size()) {
-                        break;
-                    } else {
-                        if(overFull.isEmpty()){
-                            break;
-                        }
-                        else{
-                            overFull.stream().forEach((p) -> {
-                                res.add(p);
-                                overFullSize--;
-                            });
-                        }
-                        
-                        
-                    }
 
-                }
+            //If every queue is empty, we processed everything correctly.
+            if (res.isEmpty() && cancel.isEmpty() && overFull.isEmpty()) {
+                break;
             }
 
             int prev_time = -1;
-
             String agent = null;
 
             if (cancel.peek() != null) {
@@ -394,15 +369,14 @@ public class SchedulerDriver {
                         }
                     }
 
+                    //process the batch
                     printBatch(batch);
-
                     batch.clear();
                 }
 
             } else {
                 //Reservation
                 while (true) {
-
                     Process top = res.poll();
                     if (top != null) {
                         batch.add(top);
@@ -418,22 +392,38 @@ public class SchedulerDriver {
                         } else {
                             break;
                         }
-
                     } else {
                         break;
                     }
                 }
 
+                //process the batch
                 batch.stream().forEach((p) -> {
                     map.put(p.agentID(), p.time());
                 });
-
                 printBatch(batch);
                 batch.clear();
             }
 
+            //Put un-processable requests back into the main process queue
+            if (!overFull.isEmpty()) {
+                if (overFullSize == 0) {
+                    overFull.stream().forEach((p) -> {
+                        res.add(p);
+                    });
+                    overFull.clear();
+                    overFullSize++;
+                }
+            }
+
+            //Still couldnt be processed after multiple attempts
+            if (overFullSize == 1) {
+                for (Process p : overFull) {
+                    System.out.println("Cannot admit a batch");
+                    System.out.println(p.agentID() + " cannot reserve any seats in this system");
+                }
+                overFull.clear();
+            }
         }
-
     }
-
 }
